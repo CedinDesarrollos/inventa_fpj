@@ -1,0 +1,108 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+  .form-wrap{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)), var(--bg-750, #141a21);
+    border:1px solid var(--divider, rgba(255,255,255,.08));
+    border-radius:14px; padding:1.5rem; max-width:900px;
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;
+  }
+  h1{ color:#eaf3ee; margin-bottom:1rem; font-size:1.4rem; }
+  label{ display:flex; flex-direction:column; font-weight:600; color:var(--text-300, #c9d2d0); font-size:.9rem; }
+  input{
+    margin-top:.35rem; padding:.55rem .7rem; border-radius:8px;
+    border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06);
+    color:#fff; font-size:.95rem;
+  }
+  input:focus{ outline:none; border-color:var(--brand, #16a34a); background:rgba(255,255,255,.1); }
+  .hint{ font-size:.75rem; color:var(--text-500, #8aa09a); margin-top:.2rem; }
+
+  .form-actions{
+    grid-column:1 / -1; display:flex; gap:.8rem; justify-content:flex-start; flex-wrap:wrap; margin-top:.5rem;
+  }
+  .btn-save{
+    background:var(--brand, #16a34a); color:#fff; border:none; padding:.7rem 1.2rem;
+    border-radius:10px; font-weight:700; cursor:pointer; transition:filter .15s, transform .1s;
+  }
+  .btn-save:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+  .btn-cancel{
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#e7e7e7;
+    padding:.7rem 1.2rem; border-radius:10px; text-decoration:none; font-weight:600;
+  }
+  .btn-cancel:hover{ background:rgba(255,255,255,.12); }
+  
+</style>
+
+<h1>{{ 'Nuevo Local' if not item else 'Editar Local ' ~ item.id }}</h1>
+
+<form method="post" class="form-wrap" id="formLocal">
+  {% if not item %}
+    <!-- ID autogenerado en JS -->
+    <input type="hidden" name="id" id="id">
+  {% endif %}
+
+  <label>Nombre
+    <input name="name" id="name" required value="{{ item.name if item }}">
+  </label>
+
+  <label>Ciudad
+    <input name="city" value="{{ item.city if item }}">
+  </label>
+
+  <label>Latitud
+    <input name="lat" id="lat" required pattern="-?\d{1,2}\.\d+" value="{{ item.lat if item }}">
+    <div class="hint">Ejemplo: -25.298765</div>
+  </label>
+
+  <label>Longitud
+    <input name="lon" id="lon" required pattern="-?\d{1,3}\.\d+" value="{{ item.lon if item }}">
+    <div class="hint">Ejemplo: -57.642345</div>
+  </label>
+
+  <label>Rank
+    <input name="rank" id="rank" type="number" min="1" value="{{ item.rank if item else next_rank }}">
+    <div class="hint">Siguiente disponible: {{ next_rank }}</div>
+  </label>
+
+  <label>Venta/día (Gs)
+    <input name="venta_por_dia" type="number" step="0.01" value="{{ item.venta_por_dia if item }}">
+  </label>
+
+  {% if item %}
+  <label style="align-items:center; flex-direction:row; gap:.6rem; margin-top:.4rem">
+    <input type="checkbox" name="active" {% if item.active %}checked{% endif %} style="width:1.1rem; height:1.1rem"> Activo
+  </label>
+  {% endif %}
+
+  <div class="form-actions">
+    <button type="submit" class="btn-save">💾 Guardar</button>
+    <a href="{{ url_for('abm_locales.list_locales') }}" class="btn-cancel">Cancelar</a>
+  </div>
+</form>
+
+<script>
+  // ===== Helpers =====
+  const form = document.getElementById('formLocal');
+  const nameInput = document.getElementById('name');
+  const idInput = document.getElementById('id');
+
+  // Autogenerar ID al escribir nombre (solo en nuevo)
+  {% if not item %}
+  nameInput.addEventListener('input', ()=>{
+    const raw = nameInput.value.trim().toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // quitar acentos
+      .replace(/[^a-z0-9\s_-]/g,"")                    // quitar símbolos raros
+      .replace(/\s+/g,"_");
+    idInput.value = raw ? `agromax_${raw}` : "";
+  });
+  {% endif %}
+
+  // Validación adicional de lat/lon
+  form.addEventListener('submit', (ev)=>{
+    const lat = parseFloat(document.getElementById('lat').value);
+    const lon = parseFloat(document.getElementById('lon').value);
+    if(isNaN(lat) || lat<-90 || lat>90){ alert('Latitud inválida'); ev.preventDefault(); return; }
+    if(isNaN(lon) || lon<-180 || lon>180){ alert('Longitud inválida'); ev.preventDefault(); return; }
+  });
+</script>
+{% endblock %}

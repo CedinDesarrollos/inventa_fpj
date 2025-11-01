@@ -1,0 +1,94 @@
+:root{
+  /* Ajustá el color de marca si querés un verde distinto */
+  --brand: #16a34a; /* verde */
+  --brand-hover: #128a3e;
+  --card-bg: #121418;
+  --brand-700: #15803d;     /* tono más oscuro para contraste */
+  --card-border: rgba(255,255,255,0.08);
+  --label: var(--brand-700);/* color de etiquetas */
+}
+
+html, body { height: 100%; }
+
+body.bg-dark {
+  background:
+    radial-gradient(1200px 800px at 80% -10%, rgba(22,163,74,0.12), transparent 60%),
+    radial-gradient(1000px 600px at -10% 110%, rgba(22,163,74,0.10), transparent 60%),
+    #0b0f13;
+  color: #e7e7e7;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)) , var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+}
+
+.login-logo {
+  max-height: 56px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.35));
+}
+
+.form-label,
+.form-check-label {
+  color: var(--label);
+  font-weight: 600;
+}
+
+.form-control {
+  background: #0e1318;
+  border-color: rgba(255,255,255,0.12);
+  color: #e7e7e7;
+}
+.form-control::placeholder { color: #98a2b3; }
+.form-control:focus {
+  border-color: rgba(22,163,74,0.65);
+  box-shadow: 0 0 0 .2rem rgba(22,163,74,.15);
+  background: #0e1318;
+  color: #fff;
+}
+
+/* Checkbox con color de marca (soportado por navegadores modernos) */
+.form-check-input {
+  accent-color: var(--brand);
+  border-color: rgba(255,255,255,0.25);
+}
+.form-check-input:focus {
+  box-shadow: 0 0 0 .2rem rgba(22,163,74,.25);
+  border-color: var(--brand);
+}
+
+/* Opcional: atenuar el placeholder para que resalte el label */
+.form-control::placeholder { color: #9fb3a7; } /* gris verdoso suave */
+
+.input-group .btn {
+  background: #0e1318;
+  border-color: rgba(255,255,255,0.12);
+  color: #cbd5e1;
+}
+.input-group .btn:hover {
+  background: #121820;
+  color: #fff;
+}
+
+.btn-brand {
+  background-color: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+.btn-brand:hover { background-color: var(--brand-hover); transform: translateY(-1px); }
+.btn-brand:active { transform: translateY(0); }
+
+.alert { border-radius: 12px; }
+
+/* Pequeños ajustes responsive */
+@media (max-width: 400px) {
+  .login-card { padding: 1.25rem !important; }
+  .login-logo { max-height: 48px; }
+}

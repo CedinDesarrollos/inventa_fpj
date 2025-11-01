@@ -1,0 +1,162 @@
+/* Usamos las mismas variables de la app si existen; caemos a defaults si no */
+:root{
+    --bg-900: var(--bg-900, #0b0f13);
+    --bg-800: var(--bg-800, #11161c);
+    --bg-750: var(--bg-750, #141a21);
+    --panel:  var(--panel,  #0f172a);
+    --text-300: var(--text-300, #c9d2d0);
+    --text-500: var(--text-500, #8aa09a);
+    --divider: var(--divider, rgba(255,255,255,.08));
+    --brand: var(--brand, #16a34a);          /* Verde Agromax (AM) */
+    --brand-700: var(--brand-700, #15803d);
+    --pm-amber: #f59e0b;                     /* Ámbar para PM */
+}
+
+*{ box-sizing:border-box }
+header{
+    padding:12px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)), var(--bg-800);
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:10; border-radius:12px;
+    border:1px solid var(--divider);
+}
+header h1{ font-size:18px; margin:0 8px 0 0; font-weight:800; letter-spacing:.2px; color:#eaf3ee }
+.toolbar{ display:flex; gap:8px; align-items:center; }
+
+.day-btn{
+    padding:6px 10px; border-radius:999px;
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.08);
+    color:#fff; cursor:pointer; font-weight:600
+}
+.day-btn[disabled]{ opacity:.35; cursor:not-allowed }
+.day-btn.active{ background:var(--brand); color:#0b1020; border-color:transparent }
+
+.toggle{ display:inline-flex; border:1px solid rgba(255,255,255,.18); border-radius:999px; overflow:hidden }
+.toggle button{
+    padding:6px 10px; background:rgba(255,255,255,.08); color:#fff; border:none; cursor:pointer; font-weight:600
+}
+/* Activo: AM usa verde marca; PM se pinta cuando corresponde por clase dinámica */
+.toggle button.active[data-view="AM"]{ background:var(--brand); color:#0b1020 }
+.toggle button.active[data-view="PM"]{ background:var(--pm-amber); color:#0b1020 }
+
+.legend{ display:flex; align-items:center; gap:12px; margin-left:auto; flex-wrap:wrap }
+.badge{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text-300) }
+.dot{ width:10px; height:10px; border-radius:50%; display:inline-block }
+.dot.celeste{ background:var(--brand) }  /* AM -> verde */
+.dot.ambar{ background:var(--pm-amber) }
+.muted{ color:var(--text-500) }
+
+/* Layout: usamos el alto de la zona main */
+.wrap{
+    --side: 430px;
+    display:grid; grid-template-columns: var(--side) 1fr var(--side);
+    gap:12px; height:calc(100vh - 130px); padding:12px;
+}
+.panel{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)), var(--bg-750);
+    border:1px solid var(--divider);
+    border-radius:14px; overflow:hidden; display:flex; flex-direction:column; min-height:0
+}
+.panel h3{
+    margin:0; padding:10px 12px; font-size:14px; letter-spacing:.2px;
+    border-bottom:1px solid var(--divider); background:rgba(255,255,255,.02); color:#eaf3ee
+}
+.panel .content{ padding:8px; overflow:auto }
+
+/* Depot (CL) */
+.depot-pin{
+    display:flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:50%;
+    font-weight:900; font-size:16px; line-height:1; color:#0b1220;
+    background:#fbbf24; border:2px solid rgba(0,0,0,.35); box-shadow:0 2px 10px rgba(0,0,0,.35);
+}
+
+/* Ruta (izquierda) */
+.stop{
+    display:grid; grid-template-columns: 32px 1fr auto; gap:8px; font-size:12px; align-items:center;
+    padding:8px; border:1px dashed rgba(255,255,255,.08); border-radius:10px;
+    margin-bottom:6px; background:rgba(255,255,255,.02)
+}
+.stop-num{
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:12px; background:var(--brand); color:#0b1220;
+}
+.stop .meta{ font-size:12px; color:var(--text-500) }
+.stop .act button{
+    margin-left:4px; padding:4px 6px; border-radius:8px;
+    border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06);
+    color:#fff; cursor:pointer;
+}
+.stop .act button:hover{ background:rgba(255,255,255,.12) }
+
+/* Ranking (derecha) */
+.rank-row{
+    display:grid; grid-template-columns: 52px 1fr 150px 84px; gap:8px; align-items:center;
+    padding:8px 10px; border-bottom:1px solid var(--divider)
+}
+.rank-n{ font-weight:800; color:#cbd5e1; font-size:12px; text-align:right }
+.rank-name{ font-size:12px; font-weight:700; line-height:1.15; text-align:left; color:#eaf3ee }
+.rank-sales, .rank-visit{ font-variant-numeric: tabular-nums; font-size:12px; text-align:right; color:var(--text-300) }
+.rank-head{
+    display:grid; grid-template-columns: 52px 1fr 150px 84px; gap:8px;
+    padding:6px 10px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-500)
+}
+.rank-head > :nth-child(1){ text-align:right } .rank-head > :nth-child(3){ text-align:right } .rank-head > :nth-child(4){ text-align:right }
+
+/* Map */
+#map{ width:100%; height:100% }
+.dot-store { opacity:.9 }
+.num-pin{
+    display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%;
+    font-weight:800; font-size:12px; color:#0b1220; border:2px solid rgba(0,0,0,.25); box-shadow:0 1px 6px rgba(0,0,0,.25)
+}
+.num-pin.celeste{ background:var(--brand) } .num-pin.ambar{ background:var(--pm-amber) }
+.leaflet-popup-content-wrapper{ border-radius:12px }
+
+/* Flechas de dirección */
+.route-arrow{ font-size:14px; line-height:1; font-weight:900; color:var(--route-color, var(--brand)); text-shadow:0 1px 2px rgba(0,0,0,.45); user-select:none; pointer-events:none }
+
+/* Picker */
+.picker{ padding:10px 12px; display:flex; align-items:center; gap:12px }
+.picker .pill{
+    padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.08); cursor:pointer; font-weight:600
+}
+.hidden{ display:none }
+
+/* Botón popup */
+.leaflet-popup-content .day-btn{
+    background:var(--brand); color:#0b1020; border:none; border-radius:999px; padding:8px 12px;
+    font-weight:800; box-shadow:0 1px 3px rgba(0,0,0,.2), inset 0 -1px 0 rgba(0,0,0,.08)
+}
+.leaflet-popup-content .day-btn:hover{ filter:brightness(1.05) }
+.leaflet-popup-content .day-btn:active{ transform:translateY(1px) }
+.leaflet-popup-content .day-btn[disabled]{ background:#d1d5db; color:#111827; box-shadow:none; cursor:not-allowed; opacity:1 }
+
+/* CL filas */
+.stop.cl { grid-template-columns:32px 1fr auto; background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.18) }
+.stop .cl-badge{
+    width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:#fbbf24; color:#111827; font-weight:900; box-shadow:0 1px 6px rgba(0,0,0,.25)
+}
+.stop .cl-meta{ font-size:12px; color:#a3a3a3 }
+
+/* Cerrar ruta */
+.route-toolbar{ display:flex; gap:8px; align-items:center; margin-bottom:8px }
+.btn-pill{
+    padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.08); color:#fff; font-weight:700; cursor:pointer
+}
+.btn-pill.active{ background:#fbbf24; color:#111827; border-color:transparent }
+
+/* Responsive */
+@media (max-width: 1200px){
+    .wrap{ grid-template-columns:1fr; height:auto }
+    header{ border-radius:10px }
+}
+@media (max-width: 640px){
+    header{ gap:8px }
+    .legend{ margin-left:0 }
+    .wrap{ padding:8px }
+}

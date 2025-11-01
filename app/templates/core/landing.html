@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div class="landing">
+
+  {% if has_endpoint('ruteo.mapa') %}
+  <section class="dash-section">
+    <header class="dash-header">
+      <span class="dash-ico">📚</span>
+      <h2>Herramientas</h2>
+    </header>
+    <div class="tile-grid">
+      <a class="tile" href="{{ url_for('ruteo.mapa') }}">
+        <div class="tile-ico">🗺️</div>
+        <div class="tile-body">
+          <div class="tile-title">Ruteo</div>
+          <div class="tile-sub">Planificación y mapa</div>
+        </div>
+        <div class="tile-caret">›</div>
+      </a>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if has_endpoint('abm_locales.list_locales') %}
+  <section class="dash-section">
+    <header class="dash-header">
+      <span class="dash-ico">🛠️</span>
+      <h2>Administración</h2>
+    </header>
+    <div class="tile-grid">
+      <a class="tile" href="{{ url_for('abm_locales.list_locales') }}">
+        <div class="tile-ico">🏪</div>
+        <div class="tile-body">
+          <div class="tile-title">ABM Locales</div>
+          <div class="tile-sub">Alta, baja y edición</div>
+        </div>
+        <div class="tile-caret">›</div>
+      </a>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

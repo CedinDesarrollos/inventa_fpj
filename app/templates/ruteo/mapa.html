@@ -1,0 +1,634 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+  <!-- === ESTILOS ESPECÍFICOS DEL RUTEO (Agromax) === -->
+  <style>
+ 
+    *{ box-sizing:border-box }
+    header{
+      padding:12px 16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)), var(--bg-800);
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      position:sticky; top:0; z-index:10; border-radius:12px;
+      border:1px solid var(--divider);
+    }
+    header h1{ font-size:18px; margin:0 8px 0 0; font-weight:800; letter-spacing:.2px; color:#eaf3ee }
+    .toolbar{ display:flex; gap:8px; align-items:center; }
+
+    .day-btn{
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08);
+      color:#fff; cursor:pointer; font-weight:600
+    }
+    .day-btn[disabled]{ opacity:.35; cursor:not-allowed }
+    .day-btn.active{ background:var(--brand); color:#0b1020; border-color:transparent }
+
+    .toggle{ display:inline-flex; border:1px solid rgba(255,255,255,.18); border-radius:999px; overflow:hidden }
+    .toggle button{
+      padding:6px 10px; background:rgba(255,255,255,.08); color:#fff; border:none; cursor:pointer; font-weight:600
+    }
+    /* Activo: AM usa verde marca; PM se pinta cuando corresponde por clase dinámica */
+    .toggle button.active[data-view="AM"]{ background:var(--brand); color:#0b1020 }
+    .toggle button.active[data-view="PM"]{ background:var(--pm-amber); color:#16a34a }
+
+    .legend{ display:flex; align-items:center; gap:12px; margin-left:auto; flex-wrap:wrap }
+    .badge{ display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--text-300) }
+    .dot{ width:10px; height:10px; border-radius:50%; display:inline-block }
+    .dot.celeste{ background:var(--brand) }  /* AM -> verde */
+    .dot.ambar{ background:var(--pm-amber) }
+    .muted{ color:var(--text-500) }
+
+    /* Layout: usamos el alto de la zona main */
+    .wrap{
+      --side: 430px;
+      display:grid; grid-template-columns: var(--side) 1fr var(--side);
+      gap:12px; height:calc(100vh - 130px); padding:12px;
+    }
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)), var(--bg-750);
+      border:1px solid var(--divider);
+      border-radius:14px; overflow:hidden; display:flex; flex-direction:column; min-height:0
+    }
+    .panel h3{
+      margin:0; padding:10px 12px; font-size:14px; letter-spacing:.2px;
+      border-bottom:1px solid var(--divider); background:rgba(255,255,255,.02); color:#eaf3ee
+    }
+    .panel .content{ padding:8px; overflow:auto }
+
+    /* Depot (CL) */
+    .depot-pin{
+      display:flex; align-items:center; justify-content:center;
+      width:20px; height:20px; border-radius:50%;
+      font-weight:900; font-size:16px; line-height:1; color:#0b1220;
+      background:#fbbf24; border:2px solid rgba(0,0,0,.35); box-shadow:0 2px 10px rgba(0,0,0,.35);
+    }
+
+    /* Ruta (izquierda) */
+    .stop{
+      display:grid; grid-template-columns: 32px 1fr auto; gap:8px; font-size:12px; align-items:center;
+      padding:8px; border:1px dashed rgba(255,255,255,.08); border-radius:10px;
+      margin-bottom:6px; background:rgba(255,255,255,.02)
+    }
+    .stop-num{
+      width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:12px; background:var(--brand); color:#0b1220;
+    }
+    .stop .meta{ font-size:12px; color:var(--text-500) }
+    .stop .act button{
+      margin-left:4px; padding:4px 6px; border-radius:8px;
+      border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06);
+      color:#fff; cursor:pointer;
+    }
+    .stop .act button:hover{ background:rgba(255,255,255,.12) }
+
+    /* Ranking (derecha) */
+    .rank-row{
+      display:grid; grid-template-columns: 52px 1fr 150px; gap:8px; align-items:center;
+      padding:8px 10px; border-bottom:1px solid var(--divider)
+    }
+    .rank-n{ font-weight:800; color:#cbd5e1; font-size:12px; text-align:right }
+    .rank-name{ font-size:12px; font-weight:700; line-height:1.15; text-align:left; color:#eaf3ee }
+    .rank-sales, .rank-visit{ font-variant-numeric: tabular-nums; font-size:12px; text-align:right; color:var(--text-300) }
+    .rank-head{
+      display:grid; grid-template-columns: 52px 1fr 150px; gap:8px;
+      padding:6px 10px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-500)
+    }
+    .rank-head > :nth-child(1){ text-align:right } .rank-head > :nth-child(3){ text-align:right } .rank-head > :nth-child(4){ text-align:right }
+
+    /* Map */
+    #map{ width:100%; height:100% }
+    .dot-store { opacity:.9 }
+    .num-pin{
+      display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%;
+      font-weight:800; font-size:12px; color:#0b1220; border:2px solid rgba(0,0,0,.25); box-shadow:0 1px 6px rgba(0,0,0,.25)
+    }
+    .num-pin.celeste{ background:var(--brand) } .num-pin.ambar{ background:var(--pm-amber) }
+    .leaflet-popup-content-wrapper{ border-radius:12px }
+
+    /* Flechas de dirección */
+    .route-arrow{ font-size:14px; line-height:1; font-weight:900; color:var(--route-color, var(--brand)); text-shadow:0 1px 2px rgba(0,0,0,.45); user-select:none; pointer-events:none }
+
+    /* Picker */
+    .picker{ padding:10px 12px; display:flex; align-items:center; gap:12px }
+    .picker .pill{
+      padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08); cursor:pointer; font-weight:600
+    }
+    .hidden{ display:none }
+
+    /* Botón popup */
+    .leaflet-popup-content .day-btn{
+      background:var(--brand); color:#0b1020; border:none; border-radius:999px; padding:8px 12px;
+      font-weight:800; box-shadow:0 1px 3px rgba(0,0,0,.2), inset 0 -1px 0 rgba(0,0,0,.08)
+    }
+    .leaflet-popup-content .day-btn:hover{ filter:brightness(1.05) }
+    .leaflet-popup-content .day-btn:active{ transform:translateY(1px) }
+    .leaflet-popup-content .day-btn[disabled]{ background:#d1d5db; color:#111827; box-shadow:none; cursor:not-allowed; opacity:1 }
+
+    /* CL filas */
+    .stop.cl { grid-template-columns:32px 1fr auto; background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.18) }
+    .stop .cl-badge{
+      width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      background:#fbbf24; color:#111827; font-weight:900; box-shadow:0 1px 6px rgba(0,0,0,.25)
+    }
+    .stop .cl-meta{ font-size:12px; color:#a3a3a3 }
+
+    /* Cerrar ruta */
+    .route-toolbar{ display:flex; gap:8px; align-items:center; margin-bottom:8px }
+    .btn-pill{
+      padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.08); color:#fff; font-weight:700; cursor:pointer
+    }
+    .btn-pill.active{ background:#fbbf24; color:#111827; border-color:transparent }
+
+    /* Responsive */
+    @media (max-width: 1200px){
+      .wrap{ grid-template-columns:1fr; height:auto }
+      header{ border-radius:10px }
+    }
+    @media (max-width: 640px){
+      header{ gap:8px }
+      .legend{ margin-left:0 }
+      .wrap{ padding:8px }
+    }
+  </style>
+
+  <!-- === UI DEL RUTEO === -->
+  <div id="ruteo-app">
+    <header>
+      
+      <div id="dayControls" class="toolbar"></div>
+
+      <div id="shiftToggle" class="toggle" role="tablist" aria-label="Turno">
+        <button type="button" data-view="AM" class="active" aria-selected="true">AM</button>
+        <button type="button" data-view="PM" aria-selected="false">PM</button>
+      </div>
+
+      <div class="legend">
+        <span class="badge"><span class="dot celeste"></span> AM</span>
+        <span class="badge"><span class="dot ambar"></span> PM</span>
+        <span class="muted" id="summary"></span>
+      </div>
+
+      <div class="toolbar">
+        <button id="exportBtn" class="day-btn" title="Exportar ruteo a Excel">Exportar Excel</button>
+        <div id="picker" class="picker hidden">
+          <strong class="muted">No se pudo leer <code>ruteo_map_data.json</code></strong>
+          <input type="file" id="fileInput" accept="application/json,.json" style="display:none" />
+          <button type="button" id="pickBtn" class="pill">Cargar JSON</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <!-- Panel Ruta (izquierda) -->
+      <section class="panel">
+        <h3>Ruta actual <span id="rutaHeader" class="muted"></span></h3>
+        <div class="content" id="routeList"></div>
+      </section>
+
+      <!-- Mapa (centro) -->
+      <section class="panel map-panel">
+        <div id="map"></div>
+      </section>
+
+      <!-- Panel Ranking (derecha) -->
+      <section class="panel">
+        <h3>Ranking sucursales <span class="muted">(mensual)</span></h3>
+        <div class="content" id="ranking"></div>
+      </section>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <script>
+    // ======== Estado global ========
+    let RAW = null;
+    let map, layerAll, layerRoute, polylineRoute;
+    let CURRENT_DAY = null;          // "YYYY-MM-DD"
+    let CURRENT_SHIFT = "AM";        // "AM" | "PM"
+    let layerDepot; let dirLayer;
+    let lastRouteCoords = []; let lastClosed = false;
+    const closeLoop = {};
+    function isClosed(dateStr, shift){ return !!(closeLoop[dateStr]?.[shift]); }
+
+    const userPlan = {};
+    let storeById = new Map();
+    let allStoresSorted = [];
+
+    // ======== Utilidades ========
+    const weekdayES = { Mon:'Lunes', Tue:'Martes', Wed:'Miércoles', Thu:'Jueves', Fri:'Viernes', Sat:'Sábado', Sun:'Domingo' };
+    const fmtGs = n => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString('es-PY') : '0';
+    const escapeHtml = s => (s||'').toString().replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m]));
+    const isFiniteNum = x => typeof x === 'number' && isFinite(x);
+    const isValidCoord = (lat, lon) => isFiniteNum(lat) && isFiniteNum(lon) && lat>=-90 && lat<=90 && lon>=-180 && lon<=180;
+
+    function ensureDayTurn(dateStr, shift){
+      if (!userPlan[dateStr]) userPlan[dateStr] = { AM: [], PM: [] };
+      if (!Array.isArray(userPlan[dateStr][shift])) userPlan[dateStr][shift] = [];
+      if (!closeLoop[dateStr]) closeLoop[dateStr] = { AM:false, PM:false };
+      if (typeof closeLoop[dateStr][shift] !== 'boolean') closeLoop[dateStr][shift] = false;
+    }
+    function currentRouteIds(){ ensureDayTurn(CURRENT_DAY, CURRENT_SHIFT); return userPlan[CURRENT_DAY][CURRENT_SHIFT]; }
+
+    function visitsCounter(){
+      const counts = new Map();
+      Object.entries(userPlan).forEach(([_, turns])=>{
+        ['AM','PM'].forEach(sh=>{ (turns[sh]||[]).forEach(id => counts.set(id, (counts.get(id)||0) + 1)); });
+      });
+      return counts;
+    }
+
+    // ======== Carga JSON ========
+    function ingestRAW(json){
+      RAW = json || {};
+      storeById.clear();
+      (RAW.all_stores || []).forEach(s => storeById.set(String(s.id), s));
+      allStoresSorted = (RAW.all_stores || []).slice().sort((a,b)=> (a.rank||1e9)-(b.rank||1e9));
+      const firstDate = Object.keys(RAW.days||{}).sort()[0];
+      CURRENT_DAY = firstDate || null;
+      Object.keys(RAW.days||{}).forEach(d => { userPlan[d] = { AM: [], PM: [] }; });
+      renderDays(); renderShiftToggle(); refreshAll();
+    }
+
+    // ======== Interfaz Día/Turno ========
+    function renderDays(){
+      const cont = document.getElementById('dayControls');
+      cont.innerHTML = '';
+      const days = RAW?.days || {};
+      const byWd = {};
+      Object.entries(days).forEach(([dateStr, obj]) => byWd[obj.weekday] = dateStr);
+      ['Mon','Tue','Wed','Thu','Fri','Sat'].forEach(wd=>{
+        const btn = document.createElement('button');
+        btn.className = 'day-btn' + ((byWd[wd] && byWd[wd] === CURRENT_DAY)?' active':'');
+        btn.textContent = weekdayES[wd];
+        if (!byWd[wd]) btn.disabled = true;
+        btn.onclick = () => { CURRENT_DAY = byWd[wd]; refreshAll(); renderDays(); };
+        cont.appendChild(btn);
+      });
+    }
+
+    function renderShiftToggle(){
+      const wrap = document.getElementById('shiftToggle');
+      wrap.querySelectorAll('button').forEach(b=>{
+        b.classList.toggle('active', b.dataset.view === CURRENT_SHIFT);
+        b.setAttribute('aria-selected', b.dataset.view === CURRENT_SHIFT ? 'true':'false');
+      });
+      if (!wrap._wired){
+        wrap._wired = true;
+        wrap.addEventListener('click', (e)=>{
+          const btn = e.target.closest('button[data-view]'); if (!btn) return;
+          CURRENT_SHIFT = btn.dataset.view;
+          renderShiftToggle(); refreshAll();
+        });
+      }
+    }
+
+    // ======== Mapa ========
+    function initMap(){
+      map = L.map('map', { preferCanvas:true });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        { maxZoom: 20, attribution: '&copy; OpenStreetMap, &copy; <a href="https://carto.com/attributions">CARTO</a>' }
+      ).addTo(map);
+      layerAll = L.layerGroup().addTo(map);
+      layerRoute = L.layerGroup().addTo(map);
+      layerDepot = L.layerGroup().addTo(map);
+      dirLayer = L.layerGroup().addTo(map);
+      map.on('zoomend', () => { if (lastRouteCoords.length >= 2) drawArrows(lastRouteCoords, lastClosed); });
+      map.whenReady(()=> map.invalidateSize());
+    }
+
+    function clearRouteLayers(){
+      layerRoute.clearLayers();
+      if (polylineRoute){ map.removeLayer(polylineRoute); polylineRoute = null; }
+    }
+
+    function drawArrows(coords, closed){
+      dirLayer.clearLayers();
+      if (closed || !map || coords.length < 2) return;
+      const tMarks = [0.33, 0.66];
+      for (let i = 0; i < coords.length - 1; i++){
+        const a = L.latLng(coords[i][0], coords[i][1]);
+        const b = L.latLng(coords[i+1][0], coords[i+1][1]);
+        const p1 = map.latLngToLayerPoint(a);
+        const p2 = map.latLngToLayerPoint(b);
+        const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+        tMarks.forEach(t => {
+          const lat = a.lat + (b.lat - a.lat) * t;
+          const lon = a.lng + (b.lng - a.lng) * t;
+          const icon = L.divIcon({ html:`<div class="route-arrow" style="transform: rotate(${angle}deg)">➤</div>`, className:'', iconSize:[14,14], iconAnchor:[7,7] });
+          L.marker([lat, lon], { icon, interactive:false, keyboard:false }).addTo(dirLayer);
+        });
+      }
+    }
+
+    function paintAllStores(){
+      layerAll.clearLayers();
+      (RAW.all_stores || []).forEach(s=>{
+        const lat = Number(s.lat), lon = Number(s.lon);
+        if (!isValidCoord(lat,lon)) return;
+        const m = L.circleMarker([lat, lon], { radius:3.5, weight:1, color:'#6b7280', fillColor:'#9ca3af', fillOpacity:.9, className:'dot-store' });
+        const venta = fmtGs(Number(s.venta_por_dia));
+        const rank  = s.rank ? `#${s.rank}` : '—';
+        const html = `
+          <div style="min-width:240px">
+            <div style="font-weight:800">${escapeHtml(s.name||'Sucursal')}</div>
+            <div class="muted">ID: ${escapeHtml(s.id||'')}</div>
+            <div class="muted">Rank: <strong>${rank}</strong> · Venta/día: <strong>Gs ${venta}</strong></div>
+            <div style="margin-top:10px; display:flex; gap:6px; align-items:center">
+              <button class="day-btn" data-add="${escapeHtml(String(s.id))}">Agregar a la Ruta</button>
+            </div>
+          </div>`;
+        m.bindPopup(html).addTo(layerAll);
+      });
+
+      map.off('popupopen');
+      map.on('popupopen', (ev)=>{
+        const node = ev.popup.getElement();
+        const btn = node.querySelector('button[data-add]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-add');
+        const inRoute = currentRouteIds().includes(id);
+        if (inRoute){ btn.textContent = 'Ya agregado'; btn.disabled = true; }
+        btn.onclick = ()=>{
+          addToCurrentRoute(id);
+          btn.textContent = 'Ya agregado';
+          btn.disabled = true;
+        };
+      });
+    }
+
+    function paintDepot(){
+      layerDepot.clearLayers();
+      const d = RAW?.depot; if (!d) return;
+      const lat = Number(d.lat), lon = Number(d.lon);
+      if (!isValidCoord(lat,lon)) return;
+      const icon = L.divIcon({ html:`<div class="depot-pin">★</div>`, className:'', iconSize:[28,28], iconAnchor:[14,14] });
+      const m = L.marker([lat,lon], { icon, zIndexOffset:1000 })
+        .bindPopup(`<strong>${escapeHtml(d.name||'Centro Logístico')}</strong><br><span class="muted">Punto de inicio/fin</span>`)
+        .addTo(layerDepot);
+      try { m.bringToFront(); } catch {}
+    }
+
+    function paintCurrentRoute(fit = false){
+      clearRouteLayers(); dirLayer.clearLayers(); ensureDayTurn(CURRENT_DAY, CURRENT_SHIFT);
+      const ids = currentRouteIds();
+
+      /* color por turno */
+      const colorVar = (CURRENT_SHIFT === 'AM') ? '--brand' : '--pm-amber';
+      const color = getComputedStyle(document.documentElement).getPropertyValue(colorVar).trim();
+      document.documentElement.style.setProperty('--route-color', color);
+
+      const coords = [];
+      const d = RAW?.depot;
+      if (d && isValidCoord(Number(d.lat), Number(d.lon))){ coords.push([Number(d.lat), Number(d.lon)]); }
+
+      const colorClass = (CURRENT_SHIFT === 'AM') ? 'celeste' : 'ambar';
+      ids.forEach((id, idx)=>{
+        const s = storeById.get(id); if (!s) return;
+        const lat = Number(s.lat), lon = Number(s.lon);
+        if (!isValidCoord(lat,lon)) return;
+        const icon = L.divIcon({ html:`<div class="num-pin ${colorClass}">${idx+1}</div>`, className:'', iconSize:[26,26], iconAnchor:[13,13] });
+        L.marker([lat,lon],{icon, interactive:true})
+          .bindPopup(`<strong>${escapeHtml(s.name)}</strong><br><span class="muted">ID: ${escapeHtml(s.id)}</span>`)
+          .addTo(layerRoute);
+        coords.push([lat,lon]);
+      });
+
+      const closed = isClosed(CURRENT_DAY, CURRENT_SHIFT);
+      if (closed && d && isValidCoord(Number(d.lat), Number(d.lon))){ coords.push([Number(d.lat), Number(d.lon)]); }
+
+      if (coords.length >= 2){
+        polylineRoute = L.polyline(coords, { color }).addTo(map);
+        drawArrows(coords, closed);
+        if (fit){ try { map.fitBounds(polylineRoute.getBounds().pad(0.15), { animate:false }); } catch {} }
+      }
+      lastRouteCoords = coords.slice(); lastClosed = closed;
+    }
+
+    // ======== Acciones de Ruta ========
+    function addToCurrentRoute(storeId){
+      const ids = currentRouteIds();
+      if (!storeById.has(String(storeId))) return;
+      if (!ids.includes(storeId)){
+        ids.push(storeId);
+        renderRouteList(); paintCurrentRoute(false); renderRanking(); updateHeaderSummary();
+      }
+    }
+    function removeFromCurrentRoute(index){
+      const ids = currentRouteIds();
+      if (index>=0 && index<ids.length){
+        ids.splice(index,1);
+        renderRouteList(); paintCurrentRoute(false); renderRanking(); updateHeaderSummary();
+      }
+    }
+    function moveInCurrentRoute(index, delta){
+      const ids = currentRouteIds();
+      const j = index + delta; if (j<0 || j>=ids.length) return;
+      const tmp = ids[index]; ids[index] = ids[j]; ids[j] = tmp;
+      renderRouteList(); paintCurrentRoute(false); updateHeaderSummary();
+    }
+
+    // ======== Panel Ruta (izq) ========
+    function renderRouteList(){
+      const cont = document.getElementById('routeList');
+      const ids = currentRouteIds();
+      cont.innerHTML = '';
+
+      if (!CURRENT_DAY){
+        cont.innerHTML = '<p class="muted">Seleccioná un día.</p>';
+        return;
+      }
+
+      // Toolbar: cerrar ruta
+      const tb = document.createElement('div'); tb.className = 'route-toolbar';
+      const btnClose = document.createElement('button');
+      btnClose.className = 'btn-pill' + (isClosed(CURRENT_DAY, CURRENT_SHIFT) ? ' active' : '');
+      btnClose.id = 'closeLoopBtn';
+      btnClose.textContent = isClosed(CURRENT_DAY, CURRENT_SHIFT) ? 'Ruta Cerrada' : 'Cerrar ruta';
+      btnClose.onclick = ()=>{
+        ensureDayTurn(CURRENT_DAY, CURRENT_SHIFT);
+        closeLoop[CURRENT_DAY][CURRENT_SHIFT] = !closeLoop[CURRENT_DAY][CURRENT_SHIFT];
+        renderRouteList(); paintCurrentRoute();
+      };
+      tb.appendChild(btnClose); cont.appendChild(tb);
+
+      // Fila: CL inicio
+      const depot = RAW?.depot;
+      if (depot && isValidCoord(Number(depot.lat), Number(depot.lon))){
+        const clTop = document.createElement('div');
+        clTop.className = 'stop cl';
+        clTop.innerHTML = `
+          <div class="cl-badge">★</div>
+          <div>
+            <div style="font-weight:800">CL · ${escapeHtml(depot.name||'Centro Logístico')}</div>
+            <div class="cl-meta">Inicio</div>
+          </div>
+          <div></div>`;
+        cont.appendChild(clTop);
+      }
+
+      // Paradas numeradas
+      ids.forEach((id, idx)=>{
+        const s = storeById.get(id);
+        const el = document.createElement('div');
+        el.className = 'stop';
+        el.innerHTML = `
+          <div class="stop-num">${idx+1}</div>
+          <div>
+            <div style="font-weight:700">${escapeHtml(s?.name || ('ID '+id))}</div>
+            <div class="meta">ID: <span>${escapeHtml(id)}</span></div>
+          </div>
+          <div class="act">
+            <button title="Subir" onclick="moveInCurrentRoute(${idx},-1)">↑</button>
+            <button title="Bajar" onclick="moveInCurrentRoute(${idx},+1)">↓</button>
+            <button title="Quitar" onclick="removeFromCurrentRoute(${idx})">🗑</button>
+          </div>`;
+        cont.appendChild(el);
+      });
+
+      // Fila: CL fin si está cerrada
+      if (isClosed(CURRENT_DAY, CURRENT_SHIFT) && depot && isValidCoord(Number(depot.lat), Number(depot.lon))){
+        const clBottom = document.createElement('div');
+        clBottom.className = 'stop cl';
+        clBottom.innerHTML = `
+          <div class="cl-badge">★</div>
+          <div>
+            <div style="font-weight:800">CL · ${escapeHtml(depot.name||'Centro Logístico')}</div>
+            <div class="cl-meta">Fin</div>
+          </div>
+          <div></div>`;
+        cont.appendChild(clBottom);
+      }
+
+      const weekday = RAW?.days?.[CURRENT_DAY]?.weekday;
+      const h = document.getElementById('rutaHeader');
+      h.textContent = CURRENT_DAY ? `· ${weekdayES[weekday]||''} ${CURRENT_DAY} · ${CURRENT_SHIFT}` : '';
+    }
+
+    // ======== Ranking (der) ========
+    function renderRanking(){
+      const cont = document.getElementById('ranking');
+      cont.innerHTML = '';
+      const head = document.createElement('div');
+      head.className = 'rank-head';
+      head.innerHTML = `<div>#</div><div>Sucursal</div><div>Visitas</div>`;
+      cont.appendChild(head);
+
+      const counts = visitsCounter();
+      allStoresSorted.forEach(s=>{
+        const visited = counts.get(String(s.id)) || 0;
+        const row = document.createElement('div');
+        row.className = 'rank-row';
+        row.innerHTML = `
+          <div class="rank-n">#${s.rank || '—'}</div>
+          <div class="rank-name">${escapeHtml(s.name||'')}</div>
+          
+          <div class="rank-visit">${visited}</div>`;
+        cont.appendChild(row);
+      });
+    }
+
+    // ======== Summary (cabecera) ========
+    function updateHeaderSummary(){
+      const info = document.getElementById('summary');
+      if (!CURRENT_DAY){ info.textContent = ''; return; }
+      const am = (userPlan[CURRENT_DAY]?.AM || []).length;
+      const pm = (userPlan[CURRENT_DAY]?.PM || []).length;
+      info.textContent = `${CURRENT_DAY} · AM: ${am} · PM: ${pm}`;
+    }
+
+    // ======== Exportar Excel (cliente) ========
+    function exportExcel(){
+      const rows = [["Fecha","Turno","N° Parada","ID Sucursal","Nombre Sucursal","Lat","Lon"]];
+      Object.keys(userPlan).sort().forEach(date=>{
+        ['AM','PM'].forEach(shift=>{
+          const ids = userPlan[date][shift] || [];
+          ids.forEach((id, i)=>{
+            const s = storeById.get(String(id)) || {};
+            rows.push([date, shift, i+1, String(id), s.name||"", s.lat||"", s.lon||""]);
+          });
+        });
+      });
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Ruteo");
+      XLSX.writeFile(wb, "ruteo_mes.xlsx");
+    }
+
+    // ======== Orquestación ========
+    function refreshAll(){
+      renderRouteList(); renderRanking(); updateHeaderSummary(); paintAllStores(); paintCurrentRoute(); paintDepot();
+      try{
+        const d = RAW?.depot;
+        if (d && isValidCoord(Number(d.lat), Number(d.lon))){
+          map.setView([Number(d.lat), Number(d.lon)], 12, { animate:false });
+        }
+      }catch{}
+    }
+
+    function setupPicker(){
+      const picker = document.getElementById('picker');
+      const fileInput = document.getElementById('fileInput');
+      const pickBtn = document.getElementById('pickBtn');
+      pickBtn.onclick = ()=> fileInput.click();
+      fileInput.onchange = (ev)=>{
+        const f = ev.target.files?.[0]; if (!f) return;
+        const rd = new FileReader();
+        rd.onload = ()=>{ try { const j = JSON.parse(rd.result); ingestRAW(j); picker.classList.add('hidden'); } catch(e){ alert('JSON inválido: '+e.message); } };
+        rd.readAsText(f,'utf-8');
+      };
+    }
+
+    // ======== Boot ========
+    initMap();
+    setupPicker();
+    document.getElementById('exportBtn').onclick = exportExcel;
+
+    // Botón Guardar Ruta (junto al Export)
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'day-btn'; saveBtn.id = 'saveBtn'; saveBtn.textContent = 'Guardar Ruta';
+    document.querySelector('.toolbar').prepend(saveBtn);
+
+    async function guardarRutaActual(){
+      if (!CURRENT_DAY) return alert('Seleccioná un día');
+      const payload = {
+        fecha: CURRENT_DAY,
+        turno: CURRENT_SHIFT,
+        cerrado: isClosed(CURRENT_DAY, CURRENT_SHIFT),
+        depot_id: RAW?.depot?.id || null,
+        paradas: currentRouteIds()
+      };
+      const res = await fetch('{{ url_for("ruteo.guardar") }}', {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      const j = await res.json();
+      if (j.ok) alert('Ruta guardada (id ' + j.ruta_id + ')'); else alert('Error al guardar');
+    }
+    document.getElementById('saveBtn').onclick = guardarRutaActual;
+
+    // Carga inicial desde backend
+    fetch('{{ url_for("ruteo.map_data") }}', { cache:'no-store' })
+      .then(r => { if (!r.ok) throw new Error('not ok'); return r.json(); })
+      .then(json => ingestRAW(json))
+      .catch(()=> document.getElementById('picker').classList.remove('hidden'));
+
+    // Exponer helpers
+    window.moveInCurrentRoute = moveInCurrentRoute;
+    window.removeFromCurrentRoute = removeFromCurrentRoute;
+
+    // Cerrar popup tras agregar
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.leaflet-popup-content .day-btn[data-add]');
+      if (!btn) return;
+      const storeId = btn.dataset.add;
+      addToCurrentRoute(storeId);
+      paintCurrentRoute(false);
+      map.closePopup();
+    });
+  </script>
+{% endblock %}

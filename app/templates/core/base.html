@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{{ project_name or (config.PROJECT_NAME if config else 'Admin') }} – Panel</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+</head>
+<body class="layout-with-sidebar">
+
+  <!-- SIDEBAR -->
+  <aside class="agx-sidebar">
+    <div class="agx-brand">
+      {% if has_endpoint('core_main.landing') %}
+        <a href="{{ url_for('core_main.landing') }}"
+           class="agx-brand-link {{ 'active' if request.endpoint=='core_main.landing' else '' }}">
+          <img src="{{ url_for('static', filename='images/company_slug.svg') }}" alt="Company Logo" class="agx-logo">
+        </a>
+      {% else %}
+        <div class="agx-brand-link">
+          <img src="{{ url_for('static', filename='images/company_slug.svg') }}" alt="Company Logo" class="agx-logo">
+          <div class="brand-text">
+            <strong>{{ project_name or (config.PROJECT_NAME if config else ' ') }}</strong>
+            <span class="brand-sub">ADMIN</span>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <nav class="agx-nav">
+      <div class="agx-section">HERRAMIENTAS</div>
+
+      {% if has_endpoint('ruteo.mapa') %}
+      <a class="agx-item {{ 'active' if request.endpoint=='ruteo.mapa' else '' }}"
+         href="{{ url_for('ruteo.mapa') }}">
+        <span class="agx-ico agx-ico--teal">🗺️</span><span>Ruteo</span>
+      </a>
+      {% endif %}
+
+      <div class="agx-section">ADMINISTRACION</div>
+
+      {% if has_endpoint('abm_locales.list_locales') %}
+      <a class="agx-item {{ 'active' if request.endpoint=='abm_locales.list_locales' else '' }}"
+         href="{{ url_for('abm_locales.list_locales') }}">
+        <span class="agx-ico">🏪</span><span>ABM Locales</span>
+      </a>
+      {% endif %}
+
+      {% if has_endpoint('abm_centros.list') %}
+      <a class="agx-item {{ 'active' if request.endpoint=='abm_centros.list' else '' }}"
+         href="{{ url_for('abm_centros.list') }}">
+        <span class="agx-ico">🏭</span><span>Centros Logísticos</span>
+      </a>
+      {% endif %}
+
+      {% if has_endpoint('reportes.index') %}
+      <a class="agx-item {{ 'active' if request.endpoint=='reportes.index' else '' }}"
+         href="{{ url_for('reportes.index') }}">
+        <span class="agx-ico">📊</span><span>Reportes</span>
+      </a>
+      {% endif %}
+    </nav>
+
+    <div class="agx-bottom">
+      {% if has_endpoint('core_auth.logout') %}
+      <a class="agx-item" href="{{ url_for('core_auth.logout') }}">
+        <span class="agx-ico">↩️</span><span>Salir</span>
+      </a>
+      {% endif %}
+    </div>
+  </aside>
+  <!-- /SIDEBAR -->
+
+  <!-- MAIN CONTENT -->
+  <main class="agx-main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+  <!-- /MAIN CONTENT -->
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

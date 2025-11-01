@@ -1,0 +1,62 @@
+agromax-app/
+├─ run.py
+├─ requirements.txt
+├─ Procfile
+├─ .env.example
+├─ config.py
+├─ app/
+│  ├─ __init__.py
+│  ├─ database.py
+│  ├─ models.py
+│  ├─ utils/
+│  │  └─ ruteo/
+│  │     └─ excel.py
+│  ├─ routes/
+│  │  ├─ core/
+│  │  │  ├─ __init__.py
+│  │  │  ├─ auth.py         # login/logout
+│  │  │  └─ main.py         # landing
+│  │  ├─ ruteo/
+│  │  │  ├─ __init__.py
+│  │  │  └─ endpoints.py    # /ruteo/*
+│  │  └─ abm_locales/
+│  │     ├─ __init__.py
+│  │     └─ endpoints.py    # /locales/*
+│  ├─ templates/
+│  │  ├─ core/
+│  │  │  ├─ base.html
+│  │  │  ├─ login.html
+│  │  │  └─ landing.html
+│  │  ├─ ruteo/
+│  │  │  └─ mapa.html
+│  │  └─ abm_locales/
+│  │     ├─ list.html
+│  │     └─ edit.html
+│  └─ static/
+│     └─ css/
+│        └─ app.css
+└─ sql/
+   └─ create_tables.sql
+
+
+
+------- Comandos para Crear Ambiente Virtual ---
+
+# 1) Crear venv
+python -m venv .venv
+
+# 2) Activar
+.\.venv\Scripts\Activate.ps1
+
+# 3) Actualizar pip y deps
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+# 4) Variables locales (opcional)
+Copy-Item .env.example .env
+
+# 5) Ejecutar en local (dev)
+python run.py
+# o
+set FLASK_ENV=development
+python run.py
