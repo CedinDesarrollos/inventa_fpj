@@ -9,7 +9,7 @@
     --divider: var(--divider, rgba(255,255,255,.08));
     --brand: var(--brand, #16a34a);          /* Verde Agromax (AM) */
     --brand-700: var(--brand-700, #15803d);
-    --pm-amber: #f59e0b;                     /* Ámbar para PM */
+    --pm-amber: #ffb300;                     /* Ámbar para PM */
 }
 
 *{ box-sizing:border-box }

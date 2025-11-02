@@ -21,7 +21,11 @@ def week_days(d=None):
 @ruteo_bp.route("/mapa")
 @login_required
 def mapa():
-    return render_template("ruteo/mapa.html", project_name=Settings.PROJECT_NAME)
+    return render_template(
+        "ruteo/mapa.html", 
+        project_name=Settings.PROJECT_NAME, 
+        layer_urls=Settings.SUPABASE_ASSETS,
+    )
 
 @ruteo_bp.route("/map-data")
 @login_required

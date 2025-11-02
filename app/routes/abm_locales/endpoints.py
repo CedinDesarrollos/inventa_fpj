@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from . import abm_locales_bp
 from ...database import db
-from ...models import Local
+from ...models import Local, Depot
 from config import Settings
 import re
 
@@ -22,8 +22,19 @@ def _slugify(s: str) -> str:
     return s.strip('_')
 
 def _unique_local_id(base_name: str) -> str:
-    base = f"agromax_{_slugify(base_name)}" or "agromax_local"
-    # si ya existe, agregar sufijos -1, -2, ...
+    """
+    Genera un ID único con prefijo del proyecto (Settings.PROJECT_SLUG) en minúsculas,
+    más el nombre slugificado. Ej: "<tenant>_<nombre_local>", con sufijos -1, -2 si choca.
+    """
+    # slug del proyecto, en minúsculas y saneado (sin espacios/acentos/símbolos)
+    proj = _slugify((Settings.PROJECT_SLUG or "").lower()) or "tenant"
+
+    # slug del nombre del local
+    name_slug = _slugify(base_name)
+
+    # base mínima "<proj>_local" si no hay nombre
+    base = f"{proj}_{name_slug}" if name_slug else f"{proj}_local"
+
     candidate = base
     i = 1
     while Local.query.get(candidate) is not None:
@@ -72,6 +83,7 @@ def nuevo():
         city = (request.form.get("city") or "").strip() or None
         lat = _to_float(request.form.get("lat"))
         lon = _to_float(request.form.get("lon"))
+
         # si no viene rank, usar el siguiente disponible
         rank = _to_int(request.form.get("rank"), default=next_rank)
         venta_por_dia = _to_decimal(request.form.get("venta_por_dia"), default=Decimal("0"))
@@ -110,9 +122,16 @@ def nuevo():
                 id=None, name=name, city=city, lat=lat, lon=lon, rank=rank, venta_por_dia=venta_por_dia, active=True
             ))()
             return render_template("abm_locales/edit.html", item=temp_item, next_rank=next_rank)
-
+    
     # GET
-    return render_template("abm_locales/edit.html", item=None, next_rank=next_rank)
+    depot = Depot.query.filter_by(company_slug=Settings.PROJECT_SLUG, active=True).first()
+    return render_template(
+        "abm_locales/edit.html",
+        item=None,
+        next_rank=next_rank,
+        depot={"name": depot.name, "lat": float(depot.lat), "lon": float(depot.lon)} if depot else None,
+        layer_urls=Settings.SUPABASE_ASSETS,
+    )
 
 @abm_locales_bp.route("/editar/<id>", methods=["GET", "POST"])
 @login_required
@@ -152,7 +171,14 @@ def editar(id):
         flash("Local actualizado.", "success")
         return redirect(url_for("abm_locales.list_locales"))
 
-    return render_template("abm_locales/edit.html", item=item)
+    depot = Depot.query.filter_by(company_slug=Settings.PROJECT_SLUG, active=True).first()
+    return render_template(
+        "abm_locales/edit.html",
+        item=item,
+        next_rank=item.rank,
+        depot={"name": depot.name, "lat": float(depot.lat), "lon": float(depot.lon)} if depot else None,
+        layer_urls=Settings.SUPABASE_ASSETS,
+    )
 
 @abm_locales_bp.route("/eliminar/<id>", methods=["POST"])
 @login_required

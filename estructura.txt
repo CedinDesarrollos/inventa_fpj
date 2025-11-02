@@ -57,6 +57,4 @@ Copy-Item .env.example .env
 
 # 5) Ejecutar en local (dev)
 python run.py
-# o
-set FLASK_ENV=development
-python run.py
+
